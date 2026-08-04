@@ -21,14 +21,6 @@ function solve(): void {
 solve();
 TS_EOF
 
-cat > "$DIR/Solution.java" << 'JAVA_EOF'
-public class Solution {
-    public static void main(String[] args) {
-        // TODO: implement
-    }
-}
-JAVA_EOF
-
 cat > "$DIR/Solution.cs" << 'CS_EOF'
 // TODO: implement
 Console.WriteLine("Solution.cs");
