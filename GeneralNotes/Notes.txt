@@ -1,0 +1,8 @@
+# 3. Example: scaffold your first problem
+./scripts/new-problem.sh phase0-data-structures two-sum
+
+# 4. Run each language once you've filled in the solution
+cd phase0-data-structures/two-sum
+npx tsx solution.ts
+java Solution.java
+dotnet run Solution.cs

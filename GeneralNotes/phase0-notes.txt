@@ -1,0 +1,161 @@
+# Phase 0 -- Data Structures Refresher: Notes
+
+* Arrays
+    - A collection of elements stored in contiguous memory
+    accessed by index
+    
+    - Why index access is O(1): The computer calculates the memory
+    address of element i directly using the formula base_address + (i * element_size)
+    No searching or traversal is needed -- it's pure arithmetic,
+    which is why it's constant time regardless of array size
+
+    - Static vs dynamic arrays: A static array has a fixed size decided at creation.
+    A dynamic array can grow. Internally, a dynamic array is just a static array that
+    gets replaced with a bigger one when it runs out of room -- typically doubling in size
+
+    - Why append is "amortized" O(1): Most of the time, appending just writes to the next open slot
+    -- O(1). Ocassionally, the array is full and must resize: allocate a new, larger array and copy every
+    existing element over -- O(n) for that one operation.
+    But because resizes happen exponentially less often as the array grows, if you average the cost
+    over many appends, it works out to O(1) per append.
+
+    - Why insert/delete at an arbitrary index is O(n): If you insert at index 3 in an array of 
+    100 elements, elements 3 through 99 all need to shift over by one to make room. Same logic in reverse for deletion
+
+    - The O(1) deletion trick: If you need to delete an element but don't care about preserving order, swap it withthe last element,
+    then remove the last element. Both operations are O(1), avoiding shift entirely
+
+    Operation	                        Complexity	Why
+    Access by index	                    O(1)	Direct address calculation
+    Search (unsorted)	                O(n)	Must check each element
+    Insert/delete at end	            O(1)    amortized	Occasional resize averaged out
+    Insert/delete at arbitrary index	O(n)	Shifting required
+
+
+* Strings
+    - Key fact -- immutability: In Python, Java, C#, strings are immutable. Every time you do result += "x" in a loop, 
+    you're not modifying the string -- you're creating an entirely new string and copying everything from the old one into it,
+    plus the new character
+
+    - Why this makes loop dangerous: If you concatenate inside a loop that runs "n" times, and each concentenation copies an
+    average n/2 character, total work becomes O(n2) -- a quadratic blowup hidden inside what looks like a simple O(n) loop
+
+    - The fix: Collect pieces in a list/array, then join once at the end "".join(pieces) in Python, String.join() in Java, 
+    string.Join() in C# -- O(n) total. Or use a mutable builder (StringBuilder in Java and C#)
+
+    - Frequency counting trick: When you know the alpahbet is small and fixed, a 26-element array indexed by character - 'a' is faster
+    and more memory-predictable than a hash map for counting character frequencies
+
+
+* Linked Lists
+    - What it is: A sequence of nodes, each holding a value and pointer (reference) to the next node.
+    No contiguous memory requirement -- nodes can live anywhere
+
+    - Singly vs doubly linked: Singly linked nodes only point forward (next). Doubly linked nodes also point backward (prev), enabling
+    backward traversal at the cost of extra memory per node
+
+    - The core trade-off vs arrays: Insertion/deletion at a known position is O(1) -- just rewire a couple of pointers, no shifting.
+    But finding that position takes O(n) since there is no random access -- you must walk from the head
+
+    - Why you can't binary search a linked list: Binary search requires jumping directly to the midpoint in O(1). 
+    A linked list has no such jump -- reaching the "midpoint" requires walking there, which defeats the purpose
+
+    - The three-pointer pattern: Keep prev, curr, and next all in play simultaneously:
+        1. Save next = curr.next before you overwrite anything
+        2. Point curr.next backawrd to prev
+        3. Advance: prev = curr, curr = next
+
+    - Losing track of any one of these mid-traversal is the most common bug -- you either lose the rest of the list or create a cycle
+
+
+* Stacks & Queues
+    - Stack (LIFO -- Last In, First Out): push and pull both O(1).
+    Naturally models nested structure -- the most recently opened thing must be the first thing closed
+
+    - Queue (FIFO -- First In, First Out): enqueue (add to back) and dequeue (remove from front), both should be O(1) --
+    but naive array-based "remove from front" is actually O(n), because every. remaining element must shift left by one to fil the gap
+
+    - The O(1) queue fix: Either a circular buffer or a linked list with pointers to both head and typically
+
+    - Dequeue: O(1) push/pop from both ends. This is the structure behind the "monotonic deque" pattern you'll hit later (Phase 6)
+
+    - Two-stack queue simulation: If you only have stacks available, you can simulate a queue: push everything onto stack. A: when you need to dequeue, if stack B
+    is empty, pop everything from A onto B, then pop from B.
+    This is a classic interview warm-up question in its own right
+
+* Hash Tables & Hash Sets
+    - Core mechanism: A hash function converts a key into an array index.
+    The value is stored at that index.
+    Looking up a key means hashing it again and checking that same index -- O(1) on average
+
+    - Collisions: Two different keys can hash to the same index. Two common resolution strategies:
+        - Chaining: each bucket holds a small list of all entries that hashed there; on collision, just append to the list
+        - Open addressing: on collision, probe forward to find the next free slot
+
+    - Why worst case can be O(n): If many keys collide into the same bucket, that bucket's chain grows long, and looking something up inside
+    it degrades toward O(n)
+
+    - Load factor and resizing: As the hash table fills up, collisions become more frequent. Most implementations track this
+    "load factor" and automatically resize once a threshold is crossed
+
+    - Why resizing requires full rehashing, not just copying: The index a key maps to depends on the table size (hash(key) % table_size)
+    Change the table size, and every key's correct index changes too -- so every single entry must be recomputed and reinserted into the new table.
+    This is O(n), but it happens rarely enough that it doesn't break the O(1) amortized average
+
+
+* Trees (Binary Tree, BST)
+    - Node structure: A value, plus a "left" child pointer and "right" child pointer
+    
+    - Depth vs height: Depth = distance from the root down to a specific node.
+    Height = the longest root-to-leaf path in the whole tree
+
+    - Binary Search Tree (BST) invariant: For every node in the tree -- not just its immediate children -- everthing in its left subtree
+    is smaller, and everything in the right subtree is larger. This global property is what makes BST validation trickier than it first looks
+
+    - Why an unbalanced BST degrades to O(n): If you insert already-sorted data into a BST one at a time, each new node just becomes the rightmost node's right child --
+    the tree degenerates into a straight chain, structurally identical to a linked list. Search, insert, and delete all becomes O(n) instead of the O(logn) you'd get from a balanced tree
+
+    - BST search logic: At each node, compare the target to the curreny value. Go left if smaller, right if larger, fround if equal.
+    The last node you visit before "failing off" the tree tells you exactly where the target would be inserted if it doesn't exist
+
+
+* Heaps
+    - What it is: A tree-shaped structure where every parent is smaller than its children or larger than its children
+
+    - Array representation trick: For a node at array index i: its children ive at 2i+1 and 2i+2, and its parents lives at (i-1)/2.
+    This means you never need actual pointer object -- just index arithmetic   
+
+    - Sift-up: Add the new element at the end of the array, then repeatedly swap it upward with its parents as long as it violates heap order
+
+    - Sift-down: Remove the root, move the last element into its place, then repeatedly swap it downward with the smaller child as long as it violates head order
+
+    - Why peek is O(1) but insert/extract are O(logn): Peek just reads index 0 -- instant. Insert/extract require restoring heap order along a path whose length equals the tree's height, which 
+    is log n for a heap
+
+    - Important -- a heap is NOT fully sorted: Only parent-child ordering is guaranteed. Two sibling nodes could be in either order relative to each other. This surprises people who expect heap contents to read out sorted directly
+
+
+* Graphs
+    - Adjacency list: Each node keeps a list of its direct neighbors. Memory-efficient for sparse graphs, and fast to iterate over a specific node's neighbors
+
+    - Adjacency matrix: An NxN grid where matrix[i][j] is true if an edge exists between node i and node j.
+    Gives O(1) "does this edge exist" lookups, but costs O(v2) space regardless of how mnay edges actually exist -- wasteful for sparce graphs
+
+    - When to choose which: A social network where each user has -200 friend out of millions of users is extremely sparse -- adcency list is the clear choice.
+    A smlal, densely-connected graph might favor a matrix
+
+    - Directed vs undirected: Directed means an edge from A to B doesn't imply a reverse edge from B to A exists.
+    Undirected means the connection goes both ways automatically.
+
+    - Weighted vs unweighted: Weighted edges carry a cost/distance/value; unweighted edges just represent "connected" or "not"
+
+
+
+
+
+
+
+
+
+
+
